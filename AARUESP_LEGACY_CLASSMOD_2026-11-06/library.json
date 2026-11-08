@@ -1,0 +1,30 @@
+{
+    "name": "AARUESP",
+    "version": "1.0.0",
+    "description": "Universal ESP8266/ESP32 Library with 1000+ Module Support and 200+ Board Support",
+    "keywords": "esp8266, esp32, iot, sensor, actuator, display, module, wifi, imu, blynk",
+    "authors": 
+    [
+        {
+            "name": "AARUTO",
+            "email": "aaruto@example.com",
+            "url": "https://github.com/aaruto/AARUESP"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/aaruto/AARUESP.git"
+    },
+    "license": "MIT",
+    "frameworks": ["arduino", "espidf"],
+    "platforms": ["esp8266", "esp32"],
+    "dependencies": [],
+    "examples": [
+        "examples/BME280_Demo",
+        "examples/LED_Blink",
+        "examples/OLED_Display",
+        "examples/UART_PassThrough",
+        "examples/Multi_Sensor_Dashboard",
+        "examples/IMU_Light_Demo"
+    ]
+}

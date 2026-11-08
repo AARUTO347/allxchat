@@ -1,0 +1,20 @@
+{
+  "name": "allxchat-whatsapp-bridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "WhatsApp Web bridge that relays messages into ALLXCHAT (Realtime Database).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "node-fetch": "^2.7.0",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.34.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

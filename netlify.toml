@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://storage.googleapis.com https://firebasestorage.googleapis.com https://allxchat-12a8b.firebasestorage.app https://*.googleapis.com; media-src 'self' blob: https://storage.googleapis.com https://firebasestorage.googleapis.com https://allxchat-12a8b.firebasestorage.app; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://allxchat-12a8b-default-rtdb.asia-southeast1.firebasedatabase.app wss://allxchat-12a8b-default-rtdb.asia-southeast1.firebasedatabase.app https://www.google-analytics.com https://region1.google-analytics.com https://firebaselogging.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://api.groq.com; worker-src 'self' blob:;"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

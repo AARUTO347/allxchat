@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Inter Variable', 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #111b21;
+  }
+
+  .dark body {
+    background: #0b141a;
+    color: #e9edef;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  ::selection {
+    background: rgba(0, 168, 132, 0.22);
+  }
+
+  :focus-visible {
+    outline: 2px solid #00a884;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply h-dvh w-full overflow-hidden bg-[#f0f2f5] text-[#111b21] dark:bg-[#0b141a] dark:text-[#e9edef];
+  }
+
+  .surface {
+    @apply bg-white dark:bg-[#111b21];
+  }
+
+  .surface-soft {
+    @apply bg-[#f7f8fa] dark:bg-[#0b141a];
+  }
+
+  .icon-button {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#54656f] transition-colors hover:bg-black/[0.05] active:bg-black/[0.08] disabled:cursor-not-allowed disabled:opacity-40 dark:text-[#aebac1] dark:hover:bg-white/[0.08] dark:active:bg-white/[0.12];
+  }
+
+  .icon-button-sm {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#667781] transition-colors hover:bg-black/[0.05] dark:text-[#8696a0] dark:hover:bg-white/[0.08];
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-[#d1d7db] bg-white px-3.5 py-2.5 text-[15px] text-[#111b21] placeholder:text-[#8696a0] transition focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/15 dark:border-[#2a3942] dark:bg-[#202c33] dark:text-[#e9edef] dark:placeholder:text-[#8696a0];
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#667781] dark:text-[#8696a0];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[#d1d7db] bg-white px-4 py-2.5 text-sm font-semibold text-[#111b21] transition hover:bg-[#f7f8fa] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#2a3942] dark:bg-[#202c33] dark:text-[#e9edef] dark:hover:bg-[#2a3942];
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-100 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20;
+  }
+
+  .chat-wallpaper {
+    background-color: #efeae2;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='%23111b21'%3E%3Cpolygon points='35,22 39,33 51,33 42,40 45,51 35,44 25,51 28,40 19,33 31,33' fill-opacity='0.09'/%3E%3Cpath d='M185 29a11 11 0 1 0 0 22 11 11 0 1 0 0-22zM185 35a5 5 0 1 0 0 10 5 5 0 1 0 0-10z' fill-rule='evenodd' fill-opacity='0.09'/%3E%3Cpath d='M120 108c-3-6-12-12-19-6-6 5-5 14 2 20l17 13 17-13c7-6 8-15 2-20-7-6-16 0-19 6z' fill-opacity='0.08'/%3E%3Crect x='56' y='142' width='8' height='24' fill-opacity='0.09'/%3E%3Crect x='48' y='150' width='24' height='8' fill-opacity='0.09'/%3E%3Cpolygon points='205,133 217,145 205,157 193,145' fill-opacity='0.09'/%3E%3Cpolygon points='95,193 107,215 83,215' fill-opacity='0.08'/%3E%3Ccircle cx='15' cy='110' r='2.5' fill-opacity='0.1'/%3E%3Ccircle cx='150' cy='200' r='2.5' fill-opacity='0.1'/%3E%3Ccircle cx='220' cy='210' r='2.5' fill-opacity='0.1'/%3E%3Ccircle cx='85' cy='70' r='2.5' fill-opacity='0.1'/%3E%3Ccircle cx='160' cy='110' r='2.5' fill-opacity='0.1'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 240px 240px;
+  }
+
+  .dark .chat-wallpaper {
+    background-color: #0b141a;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='%23e9edef'%3E%3Cpolygon points='35,22 39,33 51,33 42,40 45,51 35,44 25,51 28,40 19,33 31,33' fill-opacity='0.05'/%3E%3Cpath d='M185 29a11 11 0 1 0 0 22 11 11 0 1 0 0-22zM185 35a5 5 0 1 0 0 10 5 5 0 1 0 0-10z' fill-rule='evenodd' fill-opacity='0.05'/%3E%3Cpath d='M120 108c-3-6-12-12-19-6-6 5-5 14 2 20l17 13 17-13c7-6 8-15 2-20-7-6-16 0-19 6z' fill-opacity='0.045'/%3E%3Crect x='56' y='142' width='8' height='24' fill-opacity='0.05'/%3E%3Crect x='48' y='150' width='24' height='8' fill-opacity='0.05'/%3E%3Cpolygon points='205,133 217,145 205,157 193,145' fill-opacity='0.05'/%3E%3Cpolygon points='95,193 107,215 83,215' fill-opacity='0.045'/%3E%3Ccircle cx='15' cy='110' r='2.5' fill-opacity='0.055'/%3E%3Ccircle cx='150' cy='200' r='2.5' fill-opacity='0.055'/%3E%3Ccircle cx='220' cy='210' r='2.5' fill-opacity='0.055'/%3E%3Ccircle cx='85' cy='70' r='2.5' fill-opacity='0.055'/%3E%3Ccircle cx='160' cy='110' r='2.5' fill-opacity='0.055'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 240px 240px;
+  }
+
+  .bubble-in {
+    @apply bg-white text-[#111b21] shadow-bubble dark:bg-[#202c33] dark:text-[#e9edef];
+  }
+
+  .bubble-out {
+    @apply bg-[#d9fdd3] text-[#111b21] shadow-bubble dark:bg-[#005c4b] dark:text-[#e9edef];
+  }
+
+  .typing-dot {
+    @apply inline-block h-1.5 w-1.5 rounded-full bg-current;
+    animation: blink 1.3s infinite ease-in-out;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 160ms;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 320ms;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-black/[0.06] dark:bg-white/[0.08];
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.28),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+
+  .dark .skeleton::after {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.06),
+      transparent
+    );
+  }
+
+  .message-link {
+    @apply break-all text-[#027eb5] underline decoration-[#027eb5]/40 underline-offset-2 hover:decoration-[#027eb5] dark:text-[#53bdeb];
+  }
+
+  .auth-pattern {
+    background-color: #073b34;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(52, 211, 153, 0.2) 0, transparent 32%),
+      radial-gradient(circle at 88% 12%, rgba(20, 184, 166, 0.16) 0, transparent 30%),
+      radial-gradient(circle at 72% 90%, rgba(16, 185, 129, 0.13) 0, transparent 36%);
+  }
+
+  .auth-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(102, 119, 129, 0.35) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(102, 119, 129, 0.35);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

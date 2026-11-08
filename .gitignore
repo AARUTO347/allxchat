@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env*
+!.env.example
+whatsapp-bridge/.env
+whatsapp-bridge/.wwebjs_auth/
+vercel-stage/
+.vercel/
+.netlify/
+.DS_Store
+*.log

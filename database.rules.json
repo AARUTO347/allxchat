@@ -1,0 +1,139 @@
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "usernames": {
+      ".read": "auth != null",
+      "$username": {
+        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() == auth.uid) || (data.exists() && data.child('uid').val() == auth.uid))"
+      }
+    },
+    "userConversations": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$cid": {
+          ".write": "auth != null && (auth.uid == $uid || (newData.val() == true && root.child('conversations').child($cid).child('participantIds').child($uid).val() == true && root.child('conversations').child($cid).child('participantIds').child(auth.uid).exists()) || (!newData.exists() && root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
+        }
+      }
+    },
+    "conversations": {
+      "$cid": {
+        ".read": "auth != null && data.child('participantIds').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('createdBy').val() == auth.uid && newData.child('participantIds').child(auth.uid).exists()) || (!newData.exists() && data.child('createdBy').val() == auth.uid) || (data.exists() && newData.exists() && data.child('participantIds').child(auth.uid).exists()))",
+        "createdBy": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+        },
+        "isGroup": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+        },
+        "directKey": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+        },
+        "createdAt": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+        },
+        "title": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()"
+        },
+        "avatarUrl": {
+          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()"
+        },
+        "participantIds": {
+          "$pid": {
+            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $pid == auth.uid)) || (newData.exists() && (root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()))"
+          }
+        },
+        "roles": {
+          "$roleUid": {
+            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $roleUid == auth.uid)) || (newData.exists() && (root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || ($roleUid == auth.uid && newData.val() == data.val())))"
+          }
+        },
+        "joinedAt": {
+          "$key": {
+            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
+          }
+        },
+        "lastReadAt": {
+          "$key": {
+            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
+          }
+        },
+        "lastDeliveredAt": {
+          "$key": {
+            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
+          }
+        },
+        "messages": {
+          "$mid": {
+            ".validate": "(!data.exists() && newData.exists() && newData.child('senderId').val() == auth.uid && newData.child('messageType').val() != 'system') || (newData.exists() && newData.child('senderId').val() == data.child('senderId').val()) || (!newData.exists() && data.child('senderId').val() == auth.uid && newData.parent().exists()) || !newData.parent().exists()",
+            "senderId": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "content": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "messageType": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "filePath": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "fileName": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "fileMime": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "fileSize": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "recipientCount": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "createdAt": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "clientId": {
+              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+            },
+            "readAtBy": {
+              "$uid": {
+                ".validate": "$uid == auth.uid || !newData.parent().parent().exists()"
+              }
+            },
+            "deliveredAtBy": {
+              "$uid": {
+                ".validate": "$uid == auth.uid || !newData.parent().parent().exists()"
+              }
+            },
+            "reactions": {
+              "$emoji": {
+                "$uid": {
+                  ".validate": "($uid == auth.uid || !newData.parent().parent().exists()) && (newData.val() == true || !newData.exists())"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "presence": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "typing": {
+      "$conversationId": {
+        "$uid": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid == $uid"
+        }
+      }
+    }
+  }
+}
