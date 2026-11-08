@@ -7,5 +7,12 @@ whatsapp-bridge/.wwebjs_auth/
 vercel-stage/
 .vercel/
 .netlify/
+.firebase/
+.git/
+AARUESP/
+AARUTO_ANIME.AI/
+AUTAI_ZEN_AOD_2.0/
+animdustry-play/
+animdustry/
 .DS_Store
 *.log
