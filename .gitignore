@@ -5,6 +5,7 @@ dist/
 whatsapp-bridge/.env
 whatsapp-bridge/.wwebjs_auth/
 whatsapp-bridge/.wwebjs_cache/
+whatsapp-bridge/debug-login.js
 vercel-stage/
 .vercel/
 .netlify/
@@ -16,3 +17,4 @@ animdustry-play/
 animdustry/
 .DS_Store
 *.log
+whatsapp-bridge/debug-login.js
