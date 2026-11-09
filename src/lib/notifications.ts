@@ -70,8 +70,9 @@ export function registerServiceWorker(): Promise<ServiceWorkerRegistration | nul
     return Promise.resolve(null);
   }
   if (!registrationPromise) {
+    const base = import.meta.env.BASE_URL; // '/allxchat/' on GitHub Pages, '/' on Firebase Hosting
     registrationPromise = navigator.serviceWorker
-      .register('/sw.js')
+      .register(`${base}sw.js`, { scope: base === '/' ? '/' : base })
       .then(() => navigator.serviceWorker.ready)
       .catch(() => null);
   }
