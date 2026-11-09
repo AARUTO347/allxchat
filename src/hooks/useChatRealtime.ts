@@ -119,7 +119,7 @@ export function useChatRealtime({
       scheduleRefresh();
     }
 
-    let previousConversationIds = new Set<string>();
+    const previousConversationIds = new Set<string>();
     unsubscribers.push(
       subscribeToConversationIds(
         profile.id,

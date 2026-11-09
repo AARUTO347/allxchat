@@ -3,20 +3,47 @@
     "users": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['username', 'displayName', 'about', 'isOnline', 'lastSeen', 'createdAt', 'updatedAt'])",
+        "username": {
+          ".validate": "newData.isString()"
+        },
+        "displayName": {
+          ".validate": "newData.isString()"
+        },
+        "avatarUrl": {
+          ".validate": "newData.val() == null || newData.isString()"
+        },
+        "about": {
+          ".validate": "newData.isString()"
+        },
+        "isOnline": {
+          ".validate": "newData.isBoolean()"
+        },
+        "lastSeen": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "(!data.exists() || newData.val() == data.val() || !newData.exists()) && newData.isString()"
+        },
+        "updatedAt": {
+          ".validate": "(newData.isString() || !newData.exists())"
+        }
       }
     },
     "usernames": {
       ".read": "auth != null",
       "$username": {
-        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() == auth.uid) || (data.exists() && data.child('uid').val() == auth.uid))"
+        ".write": "auth != null && ((!data.exists() && newData.child('uid').val() == auth.uid) || (data.exists() && data.child('uid').val() == auth.uid))",
+        ".validate": "newData.exists() == false || (newData.child('uid').isString() && newData.child('uid').val() == auth.uid)"
       }
     },
     "userConversations": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         "$cid": {
-          ".write": "auth != null && (auth.uid == $uid || (newData.val() == true && root.child('conversations').child($cid).child('participantIds').child($uid).val() == true && root.child('conversations').child($cid).child('participantIds').child(auth.uid).exists()) || (!newData.exists() && root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
+          ".write": "auth != null && (auth.uid == $uid || (newData.val() == true && root.child('conversations').child($cid).child('participantIds').child($uid).val() == true && root.child('conversations').child($cid).child('participantIds').child(auth.uid).exists()) || (!newData.exists() && root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))",
+          ".validate": "newData.val() == true || !newData.exists()"
         }
       }
     },
@@ -68,37 +95,38 @@
           }
         },
         "messages": {
+          ".indexOn": ["createdAt"],
           "$mid": {
             ".validate": "(!data.exists() && newData.exists() && newData.child('senderId').val() == auth.uid && newData.child('messageType').val() != 'system') || (newData.exists() && newData.child('senderId').val() == data.child('senderId').val()) || (!newData.exists() && data.child('senderId').val() == auth.uid && newData.parent().exists()) || !newData.parent().exists()",
             "senderId": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "newData.isString() && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "content": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "messageType": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.isString() && (newData.val() == 'text' || newData.val() == 'image' || newData.val() == 'audio' || newData.val() == 'file')) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "filePath": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "fileName": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "fileMime": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "fileSize": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 5242880)) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "recipientCount": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.isNumber() && newData.val() >= 0) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "createdAt": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "newData.isString() && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "clientId": {
-              ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
+              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
             },
             "readAtBy": {
               "$uid": {
@@ -130,9 +158,15 @@
     "typing": {
       "$conversationId": {
         "$uid": {
-          ".read": "auth != null",
-          ".write": "auth != null && auth.uid == $uid"
+          ".read": "auth != null && root.child('conversations').child($conversationId).child('participantIds').child(auth.uid).exists()",
+          ".write": "auth != null && auth.uid == $uid && root.child('conversations').child($conversationId).child('participantIds').child(auth.uid).exists()"
         }
+      }
+    },
+    "pushSubscriptions": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
       }
     }
   }

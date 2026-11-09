@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, security/**]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Rules invariants
+        run: npm run check:rules
+      - name: Secret scan
+        run: npm run secrets
+      - name: Unit tests
+        run: npm run test
+      - name: Production build
+        run: npm run build
+
+  firebase-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate RTDB rules JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('database.rules.json','utf8')); console.log('database.rules.json parses')"
+      - name: Rules invariants
+        run: node scripts/check-rules.mjs

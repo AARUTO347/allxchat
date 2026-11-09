@@ -183,7 +183,7 @@ export function MessageInput({
       recorder.start(250);
       const timer = window.setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
       intervalRef.current = timer;
-    } catch (error) {
+    } catch {
       toast.error('Microphone access was denied.');
       setRecording(false);
     }

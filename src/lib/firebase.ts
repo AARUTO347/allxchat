@@ -5,7 +5,7 @@ import type { Analytics } from 'firebase/analytics';
 import { ref, set, update } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAxuFQi5bSJ-viRUMGmmz9L1jUoEd3MpKw',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'allxchat-12a8b.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'allxchat-12a8b',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'allxchat-12a8b.firebasestorage.app',

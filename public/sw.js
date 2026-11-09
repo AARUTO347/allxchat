@@ -1,6 +1,5 @@
 /* ALLXCHAT notification service worker.
- * This is intentionally limited to displaying browser notifications from an
- * open app. No background push subscription is created. */
+ * Shows browser notifications triggered by Web Push and in-app messages. */
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -8,6 +7,25 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'ALLXCHAT';
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    tag: data.tag,
+    silent: false,
+    data: { url: data.url || '/chat' },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
