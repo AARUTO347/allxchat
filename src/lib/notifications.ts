@@ -107,13 +107,14 @@ export async function showMessageNotification({
   title,
   body,
   conversationId,
-  icon = '/icon-192.png',
+  icon = `${import.meta.env.BASE_URL || '/'}icon-192.png`.replace(/\/+/g, '/'),
   onClick,
 }: ShowNotificationOptions): Promise<void> {
   if (typeof window === 'undefined') return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-  const url = `/chat/${conversationId}`;
+  const base = import.meta.env.BASE_URL || '/';
+  const url = `${base}chat/${conversationId}`.replace(/\/+/g, '/');
 
   try {
     const registration = await registerServiceWorker();
