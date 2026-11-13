@@ -1,0 +1,6 @@
+import{c as t,j as e,L as a}from"./index-BxRIYQXL.js";import{L as s}from"./vendor-BH8L4dmV.js";import"./firebase-D0ylzf4d.js";/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const r=t("Compass",[["path",{d:"m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z",key:"9ktpf1"}],["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}]]);function m(){return e.jsxs("div",{className:"flex h-dvh flex-col items-center justify-center bg-[#f0f2f5] px-6 text-center dark:bg-[#0b141a]",children:[e.jsx(a,{size:52}),e.jsx("div",{className:"mt-8 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300",children:e.jsx(r,{size:30})}),e.jsx("h1",{className:"mt-5 text-2xl font-semibold text-[#111b21] dark:text-[#e9edef]",children:"This page went off-grid"}),e.jsx("p",{className:"mt-2 max-w-sm text-sm leading-6 text-[#667781] dark:text-[#8696a0]",children:"The link may be broken or the page may have moved. Your conversations are still safe."}),e.jsx(s,{to:"/chat",className:"btn-primary mt-6",children:"Back to chats"})]})}export{m as NotFoundPage};
