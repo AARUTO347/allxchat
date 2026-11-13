@@ -28,7 +28,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import type { ChatMessage, Conversation, Profile } from '../../types/chat';
 
 const ACCEPTED_FILES =
-  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a';
+  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a,.mp4,.mov';
 
 interface MessageInputProps {
   conversation: Conversation;

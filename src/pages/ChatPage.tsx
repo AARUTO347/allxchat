@@ -29,6 +29,8 @@ import { useConversations } from '../hooks/useConversations';
 import { useChatRealtime } from '../hooks/useChatRealtime';
 import { usePresence } from '../hooks/usePresence';
 import { useMessages } from '../hooks/useMessages';
+import { useCall } from '../hooks/useCall';
+import { CallModal } from '../components/chat/CallModal';
 import { cn } from '../lib/utils';
 import type { Profile } from '../types/chat';
 
@@ -57,6 +59,16 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
   });
   usePresence(profile);
   const { loadOlder, reload } = useMessages(conversationId || null);
+  const {
+    activeCall,
+    incomingCall,
+    callModalOpen,
+    isIncoming,
+    startCall,
+    acceptIncoming,
+    rejectIncoming,
+    endActiveCall,
+  } = useCall(activeConversation, profile.id);
 
   useEffect(() => {
     setActiveId(conversationId || null);
@@ -150,6 +162,8 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             reloadMessages={reload}
             onBack={backToChats}
             onOpenInfo={openInfo}
+            onVoiceCall={() => void startCall('voice')}
+            onVideoCall={() => void startCall('video')}
           />
         ) : activeId ? (
           <ChatPanel
@@ -161,6 +175,8 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             reloadMessages={reload}
             onBack={backToChats}
             onOpenInfo={openInfo}
+            onVoiceCall={() => void startCall('voice')}
+            onVideoCall={() => void startCall('video')}
           />
         ) : (
           <ChatEmptyState />
@@ -217,6 +233,21 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             onClose={() => setContactInfoOpen(false)}
             conversation={activeConversation}
             profile={profile}
+          />
+        </Suspense>
+      )}
+
+      {callModalOpen && (
+        <Suspense fallback={null}>
+          <CallModal
+            open={callModalOpen}
+            callHandle={isIncoming ? null : activeCall}
+            remoteName={activeConversation?.other_user?.display_name || activeConversation?.other_user?.username || 'Unknown'}
+            onEnd={() => void endActiveCall()}
+            onAccept={() => void acceptIncoming()}
+            onReject={() => void rejectIncoming()}
+            isIncoming={isIncoming}
+            callType={incomingCall?.type || 'voice'}
           />
         </Suspense>
       )}

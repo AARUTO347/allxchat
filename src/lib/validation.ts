@@ -1,6 +1,6 @@
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
-export const MAX_MESSAGE_LENGTH = 4000;
+export const MAX_MESSAGE_LENGTH = 10000;
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
 export const MAX_GROUP_TITLE = 80;
@@ -12,6 +12,12 @@ export const IMAGE_MIME_TYPES = new Set([
   'image/png',
   'image/gif',
   'image/webp',
+]);
+
+export const VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
 ]);
 
 export const IMAGE_EXTENSIONS: Record<string, string> = {
@@ -42,6 +48,9 @@ const FILE_TYPES: Record<string, string> = {
   'audio/webm': 'webm',
   'audio/mp4': 'm4a',
   'audio/x-m4a': 'm4a',
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'video/webm': 'webm',
 };
 
 const ALLOWED_EXTENSIONS = new Set([
@@ -65,6 +74,8 @@ const ALLOWED_EXTENSIONS = new Set([
   'ogg',
   'webm',
   'm4a',
+  'mp4',
+  'mov',
 ]);
 
 export interface ValidatedFile {
@@ -136,7 +147,9 @@ export function validateFile(file: File): ValidatedFile | string {
     ? 'image'
     : mime.startsWith('audio/')
       ? 'audio'
-      : 'file';
+      : mime.startsWith('video/')
+        ? 'file'
+        : 'file';
 
   const canonicalExtension = IMAGE_EXTENSIONS[mime] || FILE_TYPES[mime] || extension;
 

@@ -30,6 +30,8 @@ interface ChatPanelProps {
   reloadMessages: () => void;
   onBack: () => void;
   onOpenInfo: () => void;
+  onVoiceCall?: () => void;
+  onVideoCall?: () => void;
 }
 
 export function ChatPanel({
@@ -40,6 +42,8 @@ export function ChatPanel({
   reloadMessages,
   onBack,
   onOpenInfo,
+  onVoiceCall,
+  onVideoCall,
 }: ChatPanelProps) {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -269,6 +273,8 @@ export function ChatPanel({
         onOpenInfo={onOpenInfo}
         onToggleSearch={() => setSearchOpen((open) => !open)}
         onSummarize={() => void summarizeConversation()}
+        onVoiceCall={onVoiceCall}
+        onVideoCall={onVideoCall}
       />
 
       {searchOpen && (

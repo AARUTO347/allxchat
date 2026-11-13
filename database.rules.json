@@ -5,30 +5,14 @@
       "$uid": {
         ".write": "auth != null && auth.uid == $uid",
         ".validate": "newData.hasChildren(['username', 'displayName', 'about', 'isOnline', 'lastSeen', 'createdAt', 'updatedAt'])",
-        "username": {
-          ".validate": "newData.isString()"
-        },
-        "displayName": {
-          ".validate": "newData.isString()"
-        },
-        "avatarUrl": {
-          ".validate": "newData.val() == null || newData.isString()"
-        },
-        "about": {
-          ".validate": "newData.isString()"
-        },
-        "isOnline": {
-          ".validate": "newData.isBoolean()"
-        },
-        "lastSeen": {
-          ".validate": "newData.isString()"
-        },
-        "createdAt": {
-          ".validate": "(!data.exists() || newData.val() == data.val() || !newData.exists()) && newData.isString()"
-        },
-        "updatedAt": {
-          ".validate": "(newData.isString() || !newData.exists())"
-        }
+        "username": { ".validate": "newData.isString()" },
+        "displayName": { ".validate": "newData.isString()" },
+        "avatarUrl": { ".validate": "newData.val() == null || newData.isString()" },
+        "about": { ".validate": "newData.isString()" },
+        "isOnline": { ".validate": "newData.isBoolean()" },
+        "lastSeen": { ".validate": "newData.isString()" },
+        "createdAt": { ".validate": "(!data.exists() || newData.val() == data.val()) && newData.isString()" },
+        "updatedAt": { ".validate": "newData.isString() || !newData.exists()" }
       }
     },
     "usernames": {
@@ -42,7 +26,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         "$cid": {
-          ".write": "auth != null && (auth.uid == $uid || (newData.val() == true && root.child('conversations').child($cid).child('participantIds').child($uid).val() == true && root.child('conversations').child($cid).child('participantIds').child(auth.uid).exists()) || (!newData.exists() && root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))",
+          ".write": "auth != null && (auth.uid == $uid || (newData.val() == true && root.child('conversations').child($cid).child('participantIds').child(auth.uid).exists()) || (!newData.exists() && root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))",
           ".validate": "newData.val() == true || !newData.exists()"
         }
       }
@@ -50,93 +34,51 @@
     "conversations": {
       "$cid": {
         ".read": "auth != null && data.child('participantIds').child(auth.uid).exists()",
-        ".write": "auth != null && ((!data.exists() && newData.child('createdBy').val() == auth.uid && newData.child('participantIds').child(auth.uid).exists()) || (!newData.exists() && data.child('createdBy').val() == auth.uid) || (data.exists() && newData.exists() && data.child('participantIds').child(auth.uid).exists()))",
-        "createdBy": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
-        },
-        "isGroup": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
-        },
-        "directKey": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
-        },
-        "createdAt": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val()"
-        },
-        "title": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()"
-        },
-        "avatarUrl": {
-          ".validate": "!data.exists() || (!newData.exists() && !newData.parent().exists()) || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()"
-        },
+        ".write": "auth != null && ((!data.exists() && newData.child('createdBy').val() == auth.uid && newData.child('participantIds').child(auth.uid).exists()) || (data.exists() && newData.exists() && data.child('participantIds').child(auth.uid).exists()) || (!newData.exists() && data.child('createdBy').val() == auth.uid))",
+        "createdBy": { ".validate": "!data.exists() || newData.val() == data.val()" },
+        "isGroup": { ".validate": "!data.exists() || newData.val() == data.val()" },
+        "directKey": { ".validate": "newData.val() == null || newData.isString()" },
+        "createdAt": { ".validate": "!data.exists() || newData.val() == data.val()" },
+        "title": { ".validate": "newData.val() == null || newData.isString()" },
+        "avatarUrl": { ".validate": "newData.val() == null || newData.isString()" },
         "participantIds": {
           "$pid": {
-            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $pid == auth.uid)) || (newData.exists() && (root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || newData.val() == data.val()))"
+            ".validate": "newData.val() == null || newData.val() == true"
           }
         },
         "roles": {
           "$roleUid": {
-            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $roleUid == auth.uid)) || (newData.exists() && (root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || ($roleUid == auth.uid && newData.val() == data.val())))"
+            ".validate": "newData.val() == null || newData.val() == 'admin' || newData.val() == 'member'"
           }
         },
         "joinedAt": {
-          "$key": {
-            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
-          }
+          "$key": { ".validate": "newData.val() == null || newData.isString()" }
         },
         "lastReadAt": {
-          "$key": {
-            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
-          }
+          "$key": { ".validate": "newData.val() == null || newData.isString()" }
         },
         "lastDeliveredAt": {
-          "$key": {
-            ".validate": "(!data.exists() && !root.child('conversations').child($cid).exists()) || (!newData.exists() && (!newData.parent().parent().exists() || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin' || $key == auth.uid)) || (newData.exists() && (newData.val() == data.val() || $key == auth.uid || root.child('conversations').child($cid).child('roles').child(auth.uid).val() == 'admin'))"
-          }
+          "$key": { ".validate": "newData.val() == null || newData.isString()" }
         },
         "messages": {
           ".indexOn": ["createdAt"],
           "$mid": {
-            ".validate": "(!data.exists() && newData.exists() && newData.child('senderId').val() == auth.uid && newData.child('messageType').val() != 'system') || (newData.exists() && newData.child('senderId').val() == data.child('senderId').val()) || (!newData.exists() && data.child('senderId').val() == auth.uid && newData.parent().exists()) || !newData.parent().exists()",
-            "senderId": {
-              ".validate": "newData.isString() && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "content": {
-              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "messageType": {
-              ".validate": "(newData.isString() && (newData.val() == 'text' || newData.val() == 'image' || newData.val() == 'audio' || newData.val() == 'file')) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "filePath": {
-              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "fileName": {
-              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "fileMime": {
-              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "fileSize": {
-              ".validate": "(newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 5242880)) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "recipientCount": {
-              ".validate": "(newData.isNumber() && newData.val() >= 0) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "createdAt": {
-              ".validate": "newData.isString() && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
-            "clientId": {
-              ".validate": "(newData.val() == null || newData.isString()) && (!data.exists() || (!newData.exists() && !newData.parent().exists()) || newData.val() == data.val())"
-            },
+            ".validate": "(!data.exists() && newData.exists() && newData.child('senderId').val() == auth.uid && newData.child('messageType').val() != 'system') || (data.exists() && newData.exists() && newData.child('senderId').val() == data.child('senderId').val()) || (!newData.exists())",
+            "senderId": { ".validate": "newData.isString()" },
+            "content": { ".validate": "newData.val() == null || newData.isString()" },
+            "messageType": { ".validate": "newData.isString() && (newData.val() == 'text' || newData.val() == 'image' || newData.val() == 'audio' || newData.val() == 'file' || newData.val() == 'call')" },
+            "filePath": { ".validate": "newData.val() == null || newData.isString()" },
+            "fileName": { ".validate": "newData.val() == null || newData.isString()" },
+            "fileMime": { ".validate": "newData.val() == null || newData.isString()" },
+            "fileSize": { ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 5242880)" },
+            "recipientCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+            "createdAt": { ".validate": "newData.isString()" },
+            "clientId": { ".validate": "newData.val() == null || newData.isString()" },
             "readAtBy": {
-              "$uid": {
-                ".validate": "$uid == auth.uid || !newData.parent().parent().exists()"
-              }
+              "$uid": { ".validate": "$uid == auth.uid || !newData.parent().parent().exists()" }
             },
             "deliveredAtBy": {
-              "$uid": {
-                ".validate": "$uid == auth.uid || !newData.parent().parent().exists()"
-              }
+              "$uid": { ".validate": "$uid == auth.uid || !newData.parent().parent().exists()" }
             },
             "reactions": {
               "$emoji": {
@@ -167,6 +109,28 @@
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "calls": {
+      "$conversationId": {
+        "$callId": {
+          ".read": "auth != null && root.child('conversations').child($conversationId).child('participantIds').child(auth.uid).exists()",
+          ".write": "auth != null && root.child('conversations').child($conversationId).child('participantIds').child(auth.uid).exists()",
+          "callerId": { ".validate": "newData.isString()" },
+          "calleeId": { ".validate": "newData.isString()" },
+          "type": { ".validate": "newData.isString() && (newData.val() == 'voice' || newData.val() == 'video')" },
+          "status": { ".validate": "newData.isString() && (newData.val() == 'ringing' || newData.val() == 'accepted' || newData.val() == 'rejected' || newData.val() == 'ended' || newData.val() == 'missed')" },
+          "offer": { ".validate": "newData.val() == null || newData.isString()" },
+          "answer": { ".validate": "newData.val() == null || newData.isString()" },
+          "createdAt": { ".validate": "newData.isString()" },
+          "iceCandidates": {
+            "$uid": {
+              "$candidateId": {
+                ".validate": "$uid == auth.uid"
+              }
+            }
+          }
+        }
       }
     }
   }

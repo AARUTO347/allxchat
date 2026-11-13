@@ -1,9 +1,11 @@
 import {
   ArrowLeft,
   Info,
+  Phone,
   Search,
   Sparkles,
   Users,
+  Video,
 } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { IconButton } from '../ui/Primitives';
@@ -19,6 +21,8 @@ interface ChatHeaderProps {
   onOpenInfo: () => void;
   onToggleSearch: () => void;
   onSummarize: () => void;
+  onVoiceCall?: () => void;
+  onVideoCall?: () => void;
 }
 
 export function ChatHeader({
@@ -29,6 +33,8 @@ export function ChatHeader({
   onOpenInfo,
   onToggleSearch,
   onSummarize,
+  onVoiceCall,
+  onVideoCall,
 }: ChatHeaderProps) {
   const otherUser = conversation.other_user;
   const presence = useChatStore((state) =>
@@ -99,6 +105,16 @@ export function ChatHeader({
       </button>
 
       <div className="flex items-center">
+        {onVoiceCall && !conversation.is_group && (
+          <IconButton label="Voice call" onClick={onVoiceCall}>
+            <Phone size={19} />
+          </IconButton>
+        )}
+        {onVideoCall && !conversation.is_group && (
+          <IconButton label="Video call" onClick={onVideoCall}>
+            <Video size={19} />
+          </IconButton>
+        )}
         <IconButton label="Summarize with AI" onClick={onSummarize}>
           <Sparkles size={19} />
         </IconButton>

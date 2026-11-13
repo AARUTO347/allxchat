@@ -64,7 +64,7 @@ type MessageDoc = {
   reactions?: Record<string, Record<string, boolean>>;
 };
 
-function currentUserId(): string {
+export function currentUserId(): string {
   const user = getAuthInstance().currentUser;
   if (!user) throw new Error('You are not signed in.');
   return user.uid;
