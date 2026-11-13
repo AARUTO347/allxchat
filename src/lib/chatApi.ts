@@ -520,9 +520,9 @@ export async function createDirectConversation(otherUserId: string): Promise<str
   if (!otherSnap.exists()) throw new Error('That person is no longer available.');
 
   const id = directConversationId(uid, otherUserId);
-  const existing = await get(ref(db, `conversations/${id}`));
+  const existing = await get(ref(db, `conversations/${id}`)).catch(() => null);
   const now = new Date().toISOString();
-  if (!existing.exists()) {
+  if (!existing || !existing.exists()) {
     const participantIds = [uid, otherUserId].sort();
     const participants: Record<string, boolean> = {};
     participantIds.forEach((userId) => {

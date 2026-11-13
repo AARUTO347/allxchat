@@ -32,8 +32,8 @@ check('typing: world-readable read rule removed',
   !rules?.typing?.['.read']);
 
 const convo = rules?.conversations?.$cid;
-check('conversations: read requires membership',
-  typeof convo?.['.read'] === 'string' && convo['.read'].includes('participantIds'));
+check('conversations: read requires membership (or non-exist)',
+  typeof convo?.['.read'] === 'string' && convo['.read'].includes('participantIds') && convo['.read'].includes('!data.exists()'));
 check('conversations: createdBy immutable',
   typeof convo?.createdBy?.['.validate'] === 'string');
 check('conversations: write requires auth',

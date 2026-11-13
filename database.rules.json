@@ -33,7 +33,7 @@
     },
     "conversations": {
       "$cid": {
-        ".read": "auth != null && data.child('participantIds').child(auth.uid).exists()",
+        ".read": "auth != null && (!data.exists() || data.child('participantIds').child(auth.uid).exists())",
         ".write": "auth != null && ((!data.exists() && newData.child('createdBy').val() == auth.uid && newData.child('participantIds').child(auth.uid).exists()) || (data.exists() && newData.exists() && data.child('participantIds').child(auth.uid).exists()) || (!newData.exists() && data.child('createdBy').val() == auth.uid))",
         "createdBy": { ".validate": "!data.exists() || newData.val() == data.val()" },
         "isGroup": { ".validate": "!data.exists() || newData.val() == data.val()" },
