@@ -12,6 +12,42 @@ import {
 } from '../lib/calls';
 import type { Conversation } from '../types/chat';
 
+// Ringtone for incoming calls
+function playRingtone(): () => void {
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return () => {};
+  const ctx = new AudioCtx();
+  let stopped = false;
+  const play = () => {
+    if (stopped) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 440;
+    gain.gain.value = 0.08;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    setTimeout(() => {
+      if (stopped) return;
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.value = 480;
+      gain2.gain.value = 0.08;
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.15);
+    }, 200);
+  };
+  const interval = setInterval(play, 1500);
+  play();
+  return () => {
+    stopped = true;
+    clearInterval(interval);
+    ctx.close().catch(() => {});
+  };
+}
 export function useCall(conversation: Conversation | null, currentUserId: string) {
   const [activeCall, setActiveCall] = useState<CallHandle | null>(null);
   const [incomingCall, setIncomingCall] = useState<{ callId: string; type: CallType; callerName: string } | null>(null);
@@ -37,11 +73,18 @@ export function useCall(conversation: Conversation | null, currentUserId: string
       });
       setIsIncoming(true);
       setCallModalOpen(true);
+      // Play ringtone
+      const stopRingtone = playRingtone();
+      (window as any).__stopRingtone = stopRingtone;
     });
     incomingUnsubRef.current = unsub;
     return () => {
       unsub();
       incomingUnsubRef.current = null;
+      if ((window as any).__stopRingtone) {
+        (window as any).__stopRingtone();
+        delete (window as any).__stopRingtone;
+      }
     };
   }, [conversation?.id, currentUserId]);
 
@@ -63,6 +106,10 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   );
 
   const acceptIncoming = useCallback(async () => {
+    if ((window as any).__stopRingtone) {
+      (window as any).__stopRingtone();
+      delete (window as any).__stopRingtone;
+    }
     if (!incomingCall || !conversation) return;
     try {
       const handle = await acceptCall(conversation.id, incomingCall.callId, incomingCall.type);
@@ -77,6 +124,10 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   }, [incomingCall, conversation]);
 
   const rejectIncoming = useCallback(async () => {
+    if ((window as any).__stopRingtone) {
+      (window as any).__stopRingtone();
+      delete (window as any).__stopRingtone;
+    }
     if (!incomingCall || !conversation) return;
     try {
       await rejectCall(conversation.id, incomingCall.callId);
