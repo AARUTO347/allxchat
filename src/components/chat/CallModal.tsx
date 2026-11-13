@@ -32,12 +32,18 @@ export function CallModal({
 
   useEffect(() => {
     if (!callHandle) return;
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = callHandle.localStream;
-    }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = callHandle.remoteStream;
-    }
+    const setupStreams = () => {
+      if (localVideoRef.current && callHandle.localStream) {
+        localVideoRef.current.srcObject = callHandle.localStream;
+      }
+      if (remoteVideoRef.current && callHandle.remoteStream) {
+        remoteVideoRef.current.srcObject = callHandle.remoteStream;
+      }
+    };
+    setupStreams();
+    // Also listen for new tracks
+    const interval = setInterval(setupStreams, 500);
+    return () => clearInterval(interval);
   }, [callHandle]);
 
   useEffect(() => {

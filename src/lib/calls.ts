@@ -35,6 +35,28 @@ export interface CallHandle {
   isCaller: boolean;
 }
 
+// ICE candidate queue for handling candidates that arrive before remote description
+interface IceQueue {
+  candidates: RTCIceCandidateInit[];
+  remoteSet: boolean;
+}
+
+function createIceQueue(): IceQueue {
+  return { candidates: [], remoteSet: false };
+}
+
+async function drainIceQueue(pc: RTCPeerConnection, queue: IceQueue): Promise<void> {
+  queue.remoteSet = true;
+  for (const candidate of queue.candidates) {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch {
+      // ignore duplicate/invalid candidates
+    }
+  }
+  queue.candidates = [];
+}
+
 // Create a new call (caller side)
 export async function initiateCall(
   conversationId: string,
@@ -49,7 +71,7 @@ export async function initiateCall(
   // Get local media
   const constraints: MediaStreamConstraints =
     type === 'video'
-      ? { audio: true, video: { width: 640, height: 480 } }
+      ? { audio: true, video: { width: 640, height: 480, facingMode: 'user' } }
       : { audio: true, video: false };
 
   const localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -60,8 +82,33 @@ export async function initiateCall(
 
   const remoteStream = new MediaStream();
   pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
+    if (event.track) {
+      remoteStream.addTrack(event.track);
+    }
+    if (event.streams && event.streams[0]) {
+      event.streams[0].getTracks().forEach((track) => {
+        if (!remoteStream.getTracks().find((t) => t.id === track.id)) {
+          remoteStream.addTrack(track);
+        }
+      });
+    }
   };
+
+  // Monitor connection state
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE connection state:', pc.iceConnectionState);
+    if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+      // Try to restart ICE
+      pc.restartIce();
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log('Connection state:', pc.connectionState);
+  };
+
+  // ICE candidate queue
+  const iceQueue = createIceQueue();
 
   // Create offer
   const offer = await pc.createOffer();
@@ -78,10 +125,10 @@ export async function initiateCall(
     createdAt: new Date().toISOString(),
   });
 
-  // ICE candidates
+  // ICE candidates - send to RTDB
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      const candidateRef = ref(db, `calls/${conversationId}/${callId}/iceCandidates/${callerId}/${Date.now()}`);
+      const candidateRef = ref(db, `calls/${conversationId}/${callId}/iceCandidates/${callerId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
       set(candidateRef, JSON.stringify(event.candidate)).catch(() => {});
     }
   };
@@ -89,8 +136,13 @@ export async function initiateCall(
   // Listen for answer
   const answerUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/answer`), async (snap) => {
     if (snap.exists() && pc.signalingState === 'have-local-offer') {
-      const answer = JSON.parse(snap.val() as string);
-      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      try {
+        const answer = JSON.parse(snap.val() as string);
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        await drainIceQueue(pc, iceQueue);
+      } catch (e) {
+        console.error('Failed to set remote description:', e);
+      }
     }
   });
 
@@ -101,9 +153,13 @@ export async function initiateCall(
       Object.values(val).forEach(async (candidateStr) => {
         try {
           const candidate = JSON.parse(candidateStr);
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          if (iceQueue.remoteSet) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } else {
+            iceQueue.candidates.push(candidate);
+          }
         } catch {
-          // ignore
+          // ignore duplicate/invalid candidates
         }
       });
     }
@@ -113,7 +169,6 @@ export async function initiateCall(
   const statusUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/status`), (snap) => {
     const status = snap.val() as CallStatus;
     if (status === 'rejected' || status === 'ended' || status === 'missed') {
-      // Cleanup will be handled by the caller
       pc.close();
       localStream.getTracks().forEach((t) => t.stop());
     }
@@ -129,8 +184,8 @@ export async function initiateCall(
     isCaller: true,
   };
 
-  // Store unsubscribe functions for cleanup
   (callHandle as { _unsubs?: Array<() => void> })._unsubs = [answerUnsubscribe, iceUnsubscribe, statusUnsubscribe];
+  (callHandle as { _iceQueue?: IceQueue })._iceQueue = iceQueue;
 
   return callHandle;
 }
@@ -151,7 +206,7 @@ export async function acceptCall(
 
   const constraints: MediaStreamConstraints =
     type === 'video'
-      ? { audio: true, video: { width: 640, height: 480 } }
+      ? { audio: true, video: { width: 640, height: 480, facingMode: 'user' } }
       : { audio: true, video: false };
 
   const localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -161,12 +216,25 @@ export async function acceptCall(
 
   const remoteStream = new MediaStream();
   pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => remoteStream.addTrack(track));
+    if (event.track) {
+      remoteStream.addTrack(event.track);
+    }
+    if (event.streams && event.streams[0]) {
+      event.streams[0].getTracks().forEach((track) => {
+        if (!remoteStream.getTracks().find((t) => t.id === track.id)) {
+          remoteStream.addTrack(track);
+        }
+      });
+    }
   };
+
+  // ICE candidate queue
+  const iceQueue = createIceQueue();
 
   // Set remote description from offer
   const offer = JSON.parse(callData.offer as string);
   await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  await drainIceQueue(pc, iceQueue);
 
   // Create answer
   const answer = await pc.createAnswer();
@@ -181,7 +249,7 @@ export async function acceptCall(
   // ICE candidates
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      const candidateRef = ref(db, `calls/${conversationId}/${callId}/iceCandidates/${calleeId}/${Date.now()}`);
+      const candidateRef = ref(db, `calls/${conversationId}/${callId}/iceCandidates/${calleeId}/${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
       set(candidateRef, JSON.stringify(event.candidate)).catch(() => {});
     }
   };
@@ -193,9 +261,13 @@ export async function acceptCall(
       Object.values(val).forEach(async (candidateStr) => {
         try {
           const candidate = JSON.parse(candidateStr);
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          if (iceQueue.remoteSet) {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } else {
+            iceQueue.candidates.push(candidate);
+          }
         } catch {
-          // ignore
+          // ignore duplicate/invalid candidates
         }
       });
     }
@@ -221,6 +293,7 @@ export async function acceptCall(
   };
 
   (callHandle as { _unsubs?: Array<() => void> })._unsubs = [iceUnsubscribe, statusUnsubscribe];
+  (callHandle as { _iceQueue?: IceQueue })._iceQueue = iceQueue;
 
   return callHandle;
 }
