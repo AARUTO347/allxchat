@@ -128,7 +128,7 @@ export async function initiateCall(
   };
 
   // Store unsubscribe functions for cleanup
-  (callHandle as any)._unsubs = [answerUnsubscribe, iceUnsubscribe, statusUnsubscribe];
+  (callHandle as { _unsubs?: Array<() => void> })._unsubs = [answerUnsubscribe, iceUnsubscribe, statusUnsubscribe];
 
   return callHandle;
 }
@@ -217,7 +217,7 @@ export async function acceptCall(
     isCaller: false,
   };
 
-  (callHandle as any)._unsubs = [iceUnsubscribe, statusUnsubscribe];
+  (callHandle as { _unsubs?: Array<() => void> })._unsubs = [iceUnsubscribe, statusUnsubscribe];
 
   return callHandle;
 }
@@ -242,7 +242,7 @@ export function cleanup(callHandle: CallHandle): void {
   try {
     callHandle.peerConnection.close();
   } catch { /* ignore */ }
-  const unsubs = (callHandle as any)._unsubs as Array<() => void> | undefined;
+  const unsubs = (callHandle as { _unsubs?: Array<() => void> })._unsubs;
   unsubs?.forEach((u) => { try { u(); } catch { /* ignore */ } });
 }
 

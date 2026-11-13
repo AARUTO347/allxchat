@@ -14,7 +14,7 @@ import type { Conversation } from '../types/chat';
 
 // Ringtone for incoming calls
 function playRingtone(): () => void {
-  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioCtx = (window as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext || (window as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtx) return () => {};
   const ctx = new AudioCtx();
   let stopped = false;
@@ -75,18 +75,18 @@ export function useCall(conversation: Conversation | null, currentUserId: string
       setCallModalOpen(true);
       // Play ringtone
       const stopRingtone = playRingtone();
-      (window as any).__stopRingtone = stopRingtone;
+      (window as { __stopRingtone?: () => void }).__stopRingtone = stopRingtone;
     });
     incomingUnsubRef.current = unsub;
     return () => {
       unsub();
       incomingUnsubRef.current = null;
-      if ((window as any).__stopRingtone) {
-        (window as any).__stopRingtone();
-        delete (window as any).__stopRingtone;
+      if ((window as { __stopRingtone?: () => void }).__stopRingtone) {
+        (window as { __stopRingtone?: () => void }).__stopRingtone!();
+        delete (window as { __stopRingtone?: () => void }).__stopRingtone;
       }
     };
-  }, [conversation?.id, currentUserId]);
+  }, [conversation, currentUserId]);
 
   const startCall = useCallback(
     async (type: CallType) => {
@@ -106,9 +106,9 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   );
 
   const acceptIncoming = useCallback(async () => {
-    if ((window as any).__stopRingtone) {
-      (window as any).__stopRingtone();
-      delete (window as any).__stopRingtone;
+    if ((window as { __stopRingtone?: () => void }).__stopRingtone) {
+      (window as { __stopRingtone?: () => void }).__stopRingtone!();
+      delete (window as { __stopRingtone?: () => void }).__stopRingtone;
     }
     if (!incomingCall || !conversation) return;
     try {
@@ -124,9 +124,9 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   }, [incomingCall, conversation]);
 
   const rejectIncoming = useCallback(async () => {
-    if ((window as any).__stopRingtone) {
-      (window as any).__stopRingtone();
-      delete (window as any).__stopRingtone;
+    if ((window as { __stopRingtone?: () => void }).__stopRingtone) {
+      (window as { __stopRingtone?: () => void }).__stopRingtone!();
+      delete (window as { __stopRingtone?: () => void }).__stopRingtone;
     }
     if (!incomingCall || !conversation) return;
     try {
