@@ -124,9 +124,15 @@ export async function showMessageNotification({
         icon,
         badge: icon,
         tag: `allxchat-${conversationId}`,
-        silent: true,
+        renotify: true,
+        silent: false,
+        vibrate: [200, 100, 200],
         data: { url },
-      });
+        actions: [
+          { action: 'reply', title: 'Reply' },
+          { action: 'mark-read', title: 'Mark as read' },
+        ],
+      } as NotificationOptions);
       return;
     }
   } catch {
@@ -138,9 +144,9 @@ export async function showMessageNotification({
       body,
       icon,
       tag: `allxchat-${conversationId}`,
-      silent: true,
+      vibrate: [200, 100, 200],
       data: { url },
-    });
+    } as NotificationOptions);
     notification.onclick = () => {
       window.focus();
       notification.close();

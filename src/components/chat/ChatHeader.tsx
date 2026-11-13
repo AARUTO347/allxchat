@@ -4,6 +4,7 @@ import {
   Phone,
   Search,
   Sparkles,
+  Trash2,
   Users,
   Video,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ interface ChatHeaderProps {
   onSummarize: () => void;
   onVoiceCall?: () => void;
   onVideoCall?: () => void;
+  onClearChat?: () => void;
 }
 
 export function ChatHeader({
@@ -35,6 +37,7 @@ export function ChatHeader({
   onSummarize,
   onVoiceCall,
   onVideoCall,
+  onClearChat,
 }: ChatHeaderProps) {
   const otherUser = conversation.other_user;
   const presence = useChatStore((state) =>
@@ -113,6 +116,11 @@ export function ChatHeader({
         {onVideoCall && !conversation.is_group && (
           <IconButton label="Video call" onClick={onVideoCall}>
             <Video size={19} />
+          </IconButton>
+        )}
+        {onClearChat && (
+          <IconButton label="Clear chat" onClick={onClearChat}>
+            <Trash2 size={19} />
           </IconButton>
         )}
         <IconButton label="Summarize with AI" onClick={onSummarize}>

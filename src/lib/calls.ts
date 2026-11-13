@@ -113,7 +113,9 @@ export async function initiateCall(
   const statusUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/status`), (snap) => {
     const status = snap.val() as CallStatus;
     if (status === 'rejected' || status === 'ended' || status === 'missed') {
-      cleanup(callHandle);
+      // Cleanup will be handled by the caller
+      pc.close();
+      localStream.getTracks().forEach((t) => t.stop());
     }
   });
 
@@ -203,7 +205,8 @@ export async function acceptCall(
   const statusUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/status`), (snap) => {
     const status = snap.val() as CallStatus;
     if (status === 'ended' || status === 'rejected' || status === 'missed') {
-      cleanup(callHandle);
+      pc.close();
+      localStream.getTracks().forEach((t) => t.stop());
     }
   });
 

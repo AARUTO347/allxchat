@@ -836,6 +836,18 @@ export async function deleteMessage(
   await remove(snap.ref);
 }
 
+export async function clearConversationMessages(conversationId: string): Promise<void> {
+  const db = getRtdb();
+  const uid = currentUserId();
+  const conversation = await getConversation(conversationId);
+  if (!conversation) throw new Error('That conversation is no longer available.');
+  if (!conversation.participantIds?.[uid]) throw new Error('You are not a participant.');
+  await update(ref(db), {
+    [`conversations/${conversationId}/messages`]: null,
+    [`conversations/${conversationId}/lastMessageAt`]: new Date().toISOString(),
+    [`conversations/${conversationId}/updatedAt`]: new Date().toISOString(),
+  });
+}
 export function readUserDocOnce(userId: string): Promise<UserDoc | null> {
   return get(ref(getRtdb(), `users/${userId}`)).then((snapshot) =>
     snapshot.exists() ? (snapshot.val() as UserDoc) : null,
