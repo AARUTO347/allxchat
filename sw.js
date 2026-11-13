@@ -22,8 +22,14 @@ self.addEventListener('push', (event) => {
     icon: data.icon || '/icon-192.png',
     badge: data.badge || '/icon-192.png',
     tag: data.tag,
+    renotify: true,
     silent: false,
+    vibrate: [200, 100, 200],
     data: { url: data.url || '/chat' },
+    actions: [
+      { action: 'reply', title: 'Reply' },
+      { action: 'mark-read', title: 'Mark as read' },
+    ],
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -31,6 +37,11 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/chat';
+
+  if (event.action === 'mark-read') {
+    // Just close the notification; the app will handle read receipts on focus
+    return;
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
