@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service firebase.storage {
+  function signedIn() {
+    return request.auth != null;
+  }
+
+  function isConversationMember(conversationId) {
+    return signedIn()
+      && request.auth.uid in
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+  }
+
+  function isConversationAdmin(conversationId) {
+    return signedIn()
+      && get(/databases/$(database)/documents/conversations/$(conversationId)).data.roles[request.auth.uid] == 'admin';
+  }
+
+  function isImage() {
+    return request.resource.contentType.matches('image/(jpeg|png|gif|webp)');
+  }
+
+  function isAttachmentMimetype() {
+    return request.resource.contentType.matches('(image/(jpeg|png|gif|webp)|audio/(mpeg|ogg|mp4|webm)|application/(pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|vnd.ms-excel|vnd.openxmlformats-officedocument.spreadsheetml.sheet|vnd.ms-powerpoint|vnd.openxmlformats-officedocument.presentationml.presentation|rtf)|text/(plain|csv))');
+  }
+
+  match /chat-attachments/{conversationId}/{userId}/{fileName} {
+    allow read: if isConversationMember(conversationId);
+    allow write: if signedIn()
+      && request.auth.uid == userId
+      && isConversationMember(conversationId)
+      && request.resource.size < 5 * 1024 * 1024
+      && isAttachmentMimetype();
+  }
+
+  match /avatars/{userId}/avatar-{fileName} {
+    allow read: if true;
+    allow write: if signedIn()
+      && request.auth.uid == userId
+      && request.resource.size < 2 * 1024 * 1024
+      && isImage();
+  }
+
+  match /avatars/groups/{groupId}/avatar-{fileName} {
+    allow read: if true;
+    allow write: if signedIn()
+      && isConversationAdmin(groupId)
+      && request.resource.size < 2 * 1024 * 1024
+      && isImage();
+  }
+}

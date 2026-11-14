@@ -30,7 +30,7 @@ import {
   type UserDoc,
 } from '../types/chat';
 
-export const MESSAGE_PAGE_SIZE = 50;
+export const MESSAGE_PAGE_SIZE = 100;
 
 type ConversationDoc = {
   isGroup: boolean;
@@ -64,7 +64,7 @@ type MessageDoc = {
   reactions?: Record<string, Record<string, boolean>>;
 };
 
-function currentUserId(): string {
+export function currentUserId(): string {
   const user = getAuthInstance().currentUser;
   if (!user) throw new Error('You are not signed in.');
   return user.uid;
@@ -400,7 +400,7 @@ async function markReceipts(
       ref(db, `conversations/${conversationId}/messages`),
       orderByChild('createdAt'),
       startAt(after),
-      limitToLast(200),
+      limitToLast(500),
     ),
   );
   const targets = snapshotEntries<MessageDoc>(snapshot).filter(
@@ -478,7 +478,7 @@ export async function searchMessages(
     query(
       ref(getRtdb(), `conversations/${conversationId}/messages`),
       orderByChild('createdAt'),
-      limitToLast(300),
+      limitToLast(1000),
     ),
   );
   const needle = cleaned.toLowerCase();
@@ -520,9 +520,9 @@ export async function createDirectConversation(otherUserId: string): Promise<str
   if (!otherSnap.exists()) throw new Error('That person is no longer available.');
 
   const id = directConversationId(uid, otherUserId);
-  const existing = await get(ref(db, `conversations/${id}`));
+  const existing = await get(ref(db, `conversations/${id}`)).catch(() => null);
   const now = new Date().toISOString();
-  if (!existing.exists()) {
+  if (!existing || !existing.exists()) {
     const participantIds = [uid, otherUserId].sort();
     const participants: Record<string, boolean> = {};
     participantIds.forEach((userId) => {
@@ -558,7 +558,7 @@ export async function createGroupConversation(
   if (!cleanTitle) throw new Error('Group name must be between 1 and 80 characters');
   const uniqueMembers = Array.from(new Set(memberIds.filter((id) => id && id !== uid)));
   if (uniqueMembers.length < 1) throw new Error('Select at least one person to join the group');
-  if (uniqueMembers.length > 99) throw new Error('Groups can have at most 100 members');
+  if (uniqueMembers.length > 499) throw new Error('Groups can have at most 500 members');
 
   const profiles = await fetchProfiles(uniqueMembers);
   if (profiles.size !== uniqueMembers.length) {
@@ -625,8 +625,8 @@ export async function addGroupMembers(
     ),
   );
   if (newMembers.length === 0) return;
-  if ((participantList(conversation).length || 0) + newMembers.length > 100) {
-    throw new Error('Groups can have at most 100 members');
+  if ((participantList(conversation).length || 0) + newMembers.length > 500) {
+    throw new Error('Groups can have at most 500 members');
   }
 
   const now = new Date().toISOString();
@@ -836,6 +836,18 @@ export async function deleteMessage(
   await remove(snap.ref);
 }
 
+export async function clearConversationMessages(conversationId: string): Promise<void> {
+  const db = getRtdb();
+  const uid = currentUserId();
+  const conversation = await getConversation(conversationId);
+  if (!conversation) throw new Error('That conversation is no longer available.');
+  if (!conversation.participantIds?.[uid]) throw new Error('You are not a participant.');
+  await update(ref(db), {
+    [`conversations/${conversationId}/messages`]: null,
+    [`conversations/${conversationId}/lastMessageAt`]: new Date().toISOString(),
+    [`conversations/${conversationId}/updatedAt`]: new Date().toISOString(),
+  });
+}
 export function readUserDocOnce(userId: string): Promise<UserDoc | null> {
   return get(ref(getRtdb(), `users/${userId}`)).then((snapshot) =>
     snapshot.exists() ? (snapshot.val() as UserDoc) : null,

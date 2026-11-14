@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { Sidebar } from '../components/chat/Sidebar';
 import { ChatEmptyState } from '../components/chat/ChatEmptyState';
 import { LoadingScreen } from '../components/ui/Primitives';
@@ -29,6 +30,9 @@ import { useConversations } from '../hooks/useConversations';
 import { useChatRealtime } from '../hooks/useChatRealtime';
 import { usePresence } from '../hooks/usePresence';
 import { useMessages } from '../hooks/useMessages';
+import { clearConversationMessages } from '../lib/chatApi';
+import { useCall } from '../hooks/useCall';
+import { CallModal } from '../components/chat/CallModal';
 import { cn } from '../lib/utils';
 import type { Profile } from '../types/chat';
 
@@ -57,6 +61,16 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
   });
   usePresence(profile);
   const { loadOlder, reload } = useMessages(conversationId || null);
+  const {
+    activeCall,
+    incomingCall,
+    callModalOpen,
+    isIncoming,
+    startCall,
+    acceptIncoming,
+    rejectIncoming,
+    endActiveCall,
+  } = useCall(activeConversation, profile.id);
 
   useEffect(() => {
     setActiveId(conversationId || null);
@@ -109,6 +123,19 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
     navigate('/chat');
   };
 
+  const handleClearChat = async () => {
+    if (!activeConversation) return;
+    const confirmed = window.confirm('Clear all messages in this chat? This cannot be undone.');
+    if (!confirmed) return;
+    try {
+      await clearConversationMessages(activeConversation.id);
+      useChatStore.getState().setMessages(activeConversation.id, [], false);
+      toast.success('Chat cleared.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to clear chat.');
+    }
+  };
+
   const activeId = conversationId || null;
 
   return (
@@ -150,6 +177,9 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             reloadMessages={reload}
             onBack={backToChats}
             onOpenInfo={openInfo}
+            onVoiceCall={() => void startCall('voice')}
+            onVideoCall={() => void startCall('video')}
+            onClearChat={() => void handleClearChat()}
           />
         ) : activeId ? (
           <ChatPanel
@@ -161,6 +191,9 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             reloadMessages={reload}
             onBack={backToChats}
             onOpenInfo={openInfo}
+            onVoiceCall={() => void startCall('voice')}
+            onVideoCall={() => void startCall('video')}
+            onClearChat={() => void handleClearChat()}
           />
         ) : (
           <ChatEmptyState />
@@ -217,6 +250,21 @@ function ChatWorkspace({ profile }: { profile: Profile }) {
             onClose={() => setContactInfoOpen(false)}
             conversation={activeConversation}
             profile={profile}
+          />
+        </Suspense>
+      )}
+
+      {callModalOpen && (
+        <Suspense fallback={null}>
+          <CallModal
+            open={callModalOpen}
+            callHandle={isIncoming ? null : activeCall}
+            remoteName={activeConversation?.other_user?.display_name || activeConversation?.other_user?.username || 'Unknown'}
+            onEnd={() => void endActiveCall()}
+            onAccept={() => void acceptIncoming()}
+            onReject={() => void rejectIncoming()}
+            isIncoming={isIncoming}
+            callType={incomingCall?.type || 'voice'}
           />
         </Suspense>
       )}

@@ -28,7 +28,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import type { ChatMessage, Conversation, Profile } from '../../types/chat';
 
 const ACCEPTED_FILES =
-  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a';
+  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a,.mp4,.mov';
 
 interface MessageInputProps {
   conversation: Conversation;
@@ -183,7 +183,7 @@ export function MessageInput({
       recorder.start(250);
       const timer = window.setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
       intervalRef.current = timer;
-    } catch (error) {
+    } catch {
       toast.error('Microphone access was denied.');
       setRecording(false);
     }
@@ -492,7 +492,7 @@ export function MessageInput({
 
         <div className="hidden items-center justify-between px-2 pb-1 pt-1.5 text-[10px] text-[#8696a0] sm:flex">
           <span>Enter to send · Shift + Enter for a new line</span>
-          <span>Max file size 5 MB</span>
+          <span>Max file size 10 MB</span>
         </div>
       </div>
 

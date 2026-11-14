@@ -103,7 +103,10 @@ export function useChatRealtime({
             title,
             body: previewFromMessage(message.content, message.message_type, message.file_name),
             conversationId,
-            onClick: () => navigate(`/chat/${conversationId}`),
+            onClick: () => {
+        const base = import.meta.env.BASE_URL || '/';
+        navigate(`${base}chat/${conversationId}`.replace(/\/+/g, '/'));
+      },
           });
         }
       }
@@ -117,9 +120,14 @@ export function useChatRealtime({
         }
       }
       scheduleRefresh();
+      // Refresh the active conversation's message list so new messages appear
+      // without requiring a manual page reload.
+      if (isActive) {
+        useChatStore.getState().bumpSyncVersion();
+      }
     }
 
-    let previousConversationIds = new Set<string>();
+    const previousConversationIds = new Set<string>();
     unsubscribers.push(
       subscribeToConversationIds(
         profile.id,
@@ -135,6 +143,8 @@ export function useChatRealtime({
               previousConversationIds.delete(id);
             }
           });
+          // Set up message listeners for any new conversations immediately
+          syncMessageListeners();
           scheduleRefresh();
         },
         () => {

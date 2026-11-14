@@ -16,12 +16,19 @@ A small Node relay that pairs with a **real WhatsApp account** (QR scan) and pos
    npm start
    ```
 
-4. Open http://localhost:3000/qr and **scan the QR code** with WhatsApp on your phone (Linked Devices).
+4. Open `http://localhost:3000/qr?t=<BRIDGE_TOKEN>` and **scan the QR code** with WhatsApp on your phone (Linked Devices). The token is auto-generated and saved to `.env` on first run; the `?t=` form exists so a plain browser can reach the page without extensions.
 5. WhatsApp messages you receive now get relayed into your ALLXCHAT conversation with the bridge bot. Commands from a WhatsApp chat:
    - `!help` — list commands
    - `!chat hola` — post `hola` to ALLXCHAT as the bridge
    - `!status` — bridge status
-6. Optional outbound: `POST http://localhost:3000/send` with JSON `{"chatId":"<whatsapp-chat-id>","message":"hi"}`.
+6. Optional outbound (token required): `POST http://localhost:3000/send` with header `Authorization: Bearer <BRIDGE_TOKEN>` and JSON `{"chatId":"<whatsapp-chat-id>","message":"hi"}`. Outbound sends are rate-capped at 30/minute.
+
+## Security
+
+- The API binds **127.0.0.1 only** (not reachable from your LAN or the internet).
+- `/qr`, `/status`, `/send` all require the `BRIDGE_TOKEN` (header or `?t=`). Requests without it get `401`.
+- `/status` returns only `{ ok, ready }` — no uids or token state leak.
+- `.env` (bot password + token) is git-ignored; never commit it.
 
 ## How it fits together
 

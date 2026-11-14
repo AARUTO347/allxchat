@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 import { Avatar } from '../ui/Avatar';
 import { Drawer, Spinner } from '../ui/Primitives';
 import { getErrorMessage } from '../../lib/errors';
-import { notificationPermission, requestNotificationPermission } from '../../lib/notifications';
+import { notificationPermission, requestNotificationPermission, subscribePush, unsubscribePush } from '../../lib/notifications';
 import { playIncomingSound } from '../../lib/sounds';
 import { uploadAvatar } from '../../lib/storage';
 import {
@@ -145,15 +145,22 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   };
 
   const toggleNotifications = async (enabled: boolean) => {
+    if (!profile) return;
     if (!enabled) {
       setNotifications(false);
+      void unsubscribePush(profile.id);
       return;
     }
     const result = await requestNotificationPermission();
     setPermission(result);
     if (result === 'granted') {
       setNotifications(true);
-      toast.success('Browser notifications enabled.');
+      const subscribed = await subscribePush(profile.id);
+      toast.success(
+        subscribed
+          ? 'Push notifications enabled. You will be notified even when ALLXCHAT is closed.'
+          : 'Browser notifications enabled.',
+      );
     } else if (result === 'denied') {
       setNotifications(false);
       toast.error('Notifications are blocked in your browser settings.');
