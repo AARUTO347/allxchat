@@ -1,7 +1,7 @@
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 export const MAX_MESSAGE_LENGTH = 50000;
-export const MAX_FILE_SIZE = 7 * 1024 * 1024;
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 export const MAX_AVATAR_SIZE = 7 * 1024 * 1024;
 export const MAX_GROUP_TITLE = 200;
 export const MAX_DISPLAY_NAME = 100;

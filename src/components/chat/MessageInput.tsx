@@ -492,7 +492,7 @@ export function MessageInput({
 
         <div className="hidden items-center justify-between px-2 pb-1 pt-1.5 text-[10px] text-[#8696a0] sm:flex">
           <span>Enter to send · Shift + Enter for a new line</span>
-          <span>Max file size 7 MB</span>
+          <span>Max file size 10 MB</span>
         </div>
       </div>
 

@@ -70,7 +70,7 @@
             "filePath": { ".validate": "newData.val() == null || newData.isString()" },
             "fileName": { ".validate": "newData.val() == null || newData.isString()" },
             "fileMime": { ".validate": "newData.val() == null || newData.isString()" },
-            "fileSize": { ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 7340032)" },
+            "fileSize": { ".validate": "newData.val() == null || (newData.isNumber() && newData.val() >= 0 && newData.val() <= 10485760)" },
             "recipientCount": { ".validate": "newData.isNumber() && newData.val() >= 0" },
             "createdAt": { ".validate": "newData.isString()" },
             "clientId": { ".validate": "newData.val() == null || newData.isString()" },
