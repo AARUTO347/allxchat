@@ -107,8 +107,8 @@ export function NewGroupModal({ open, onClose, profile, onCreated }: NewGroupMod
       if (current.some((item) => item.id === user.id)) {
         return current.filter((item) => item.id !== user.id);
       }
-      if (current.length >= 99) {
-        toast.error('Groups can include up to 100 people, including you.');
+      if (current.length >= 499) {
+        toast.error('Groups can include up to 500 people, including you.');
         return current;
       }
       return [...current, user];

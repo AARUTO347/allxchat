@@ -18,8 +18,8 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const MAX_BODY_BYTES = 64 * 1024;
-const MAX_MESSAGES = 40;
-const MAX_MESSAGE_CHARS = 8000;
+const MAX_MESSAGES = 100;
+const MAX_MESSAGE_CHARS = 50000;
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 30; // requests per minute per IP (best-effort, warm-instance scoped)
 

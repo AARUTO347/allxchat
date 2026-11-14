@@ -30,7 +30,7 @@ import {
   type UserDoc,
 } from '../types/chat';
 
-export const MESSAGE_PAGE_SIZE = 50;
+export const MESSAGE_PAGE_SIZE = 100;
 
 type ConversationDoc = {
   isGroup: boolean;
@@ -400,7 +400,7 @@ async function markReceipts(
       ref(db, `conversations/${conversationId}/messages`),
       orderByChild('createdAt'),
       startAt(after),
-      limitToLast(200),
+      limitToLast(500),
     ),
   );
   const targets = snapshotEntries<MessageDoc>(snapshot).filter(
@@ -478,7 +478,7 @@ export async function searchMessages(
     query(
       ref(getRtdb(), `conversations/${conversationId}/messages`),
       orderByChild('createdAt'),
-      limitToLast(300),
+      limitToLast(1000),
     ),
   );
   const needle = cleaned.toLowerCase();
@@ -558,7 +558,7 @@ export async function createGroupConversation(
   if (!cleanTitle) throw new Error('Group name must be between 1 and 80 characters');
   const uniqueMembers = Array.from(new Set(memberIds.filter((id) => id && id !== uid)));
   if (uniqueMembers.length < 1) throw new Error('Select at least one person to join the group');
-  if (uniqueMembers.length > 99) throw new Error('Groups can have at most 100 members');
+  if (uniqueMembers.length > 499) throw new Error('Groups can have at most 500 members');
 
   const profiles = await fetchProfiles(uniqueMembers);
   if (profiles.size !== uniqueMembers.length) {
@@ -625,8 +625,8 @@ export async function addGroupMembers(
     ),
   );
   if (newMembers.length === 0) return;
-  if ((participantList(conversation).length || 0) + newMembers.length > 100) {
-    throw new Error('Groups can have at most 100 members');
+  if ((participantList(conversation).length || 0) + newMembers.length > 500) {
+    throw new Error('Groups can have at most 500 members');
   }
 
   const now = new Date().toISOString();

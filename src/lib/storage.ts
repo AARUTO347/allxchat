@@ -61,7 +61,7 @@ export async function uploadAttachment(
 ): Promise<{ path: string; validated: ValidatedFile }> {
   const validated = validatedAttachment(file);
   const dataUrl = file.type.startsWith('image/')
-    ? await resizeImageToDataUrl(file, 1280)
+    ? await resizeImageToDataUrl(file, 2560)
     : await readAsDataUrl(file);
   return { path: dataUrl, validated };
 }
@@ -86,5 +86,5 @@ export async function uploadAvatar(
 ): Promise<string> {
   const validationError = validateAvatar(file);
   if (validationError) throw new Error(validationError);
-  return resizeImageToDataUrl(file, 512);
+  return resizeImageToDataUrl(file, 1024);
 }
