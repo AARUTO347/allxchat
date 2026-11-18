@@ -6,14 +6,29 @@ import { get, onValue, ref, remove, set, update } from 'firebase/database';
 import { getRtdb } from './firebase';
 import { currentUserId } from './chatApi';
 
-const STUN_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-];
+function getIceServers(): RTCIceServer[] {
+  const servers: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+  ];
+  const turnUrl = (import.meta.env.VITE_TURN_URL as string | undefined)?.trim();
+  const turnUsername = (import.meta.env.VITE_TURN_USERNAME as string | undefined)?.trim();
+  const turnCredential = (import.meta.env.VITE_TURN_CREDENTIAL as string | undefined)?.trim();
+  if (turnUrl) {
+    turnUrl
+      .split(',')
+      .map((u) => u.trim())
+      .filter(Boolean)
+      .forEach((u) => {
+        servers.push({ urls: u, username: turnUsername, credential: turnCredential });
+      });
+  }
+  return servers;
+}
 
 export type CallType = 'voice' | 'video';
-export type CallStatus = 'ringing' | 'accepted' | 'rejected' | 'ended' | 'missed';
+export type CallStatus = 'ringing' | 'accepted' | 'rejected' | 'cancelled' | 'ended' | 'missed';
 
 export interface CallDoc {
   callerId: string;
@@ -77,7 +92,7 @@ export async function initiateCall(
   const localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
   // Create peer connection
-  const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
+  const pc = new RTCPeerConnection({ iceServers: getIceServers() });
   localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
   const remoteStream = new MediaStream();
@@ -168,7 +183,7 @@ export async function initiateCall(
   // Listen for status changes (rejected/ended)
   const statusUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/status`), (snap) => {
     const status = snap.val() as CallStatus;
-    if (status === 'rejected' || status === 'ended' || status === 'missed') {
+    if (status === 'rejected' || status === 'cancelled' || status === 'ended' || status === 'missed') {
       pc.close();
       localStream.getTracks().forEach((t) => t.stop());
     }
@@ -211,7 +226,7 @@ export async function acceptCall(
 
   const localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-  const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
+  const pc = new RTCPeerConnection({ iceServers: getIceServers() });
   localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
   const remoteStream = new MediaStream();
@@ -276,7 +291,7 @@ export async function acceptCall(
   // Listen for status changes
   const statusUnsubscribe = onValue(ref(db, `calls/${conversationId}/${callId}/status`), (snap) => {
     const status = snap.val() as CallStatus;
-    if (status === 'ended' || status === 'rejected' || status === 'missed') {
+    if (status === 'ended' || status === 'rejected' || status === 'cancelled' || status === 'missed') {
       pc.close();
       localStream.getTracks().forEach((t) => t.stop());
     }
@@ -308,6 +323,16 @@ export async function rejectCall(conversationId: string, callId: string): Promis
 export async function endCall(conversationId: string, callId: string): Promise<void> {
   const db = getRtdb();
   await update(ref(db, `calls/${conversationId}/${callId}`), { status: 'ended' });
+}
+
+// Set an arbitrary terminal status (cancel/missed/busy)
+export async function setCallStatus(
+  conversationId: string,
+  callId: string,
+  status: CallStatus,
+): Promise<void> {
+  const db = getRtdb();
+  await update(ref(db, `calls/${conversationId}/${callId}`), { status });
 }
 
 // Cleanup resources

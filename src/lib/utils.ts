@@ -67,12 +67,13 @@ export function isSameId(a?: string | null, b?: string | null): boolean {
 export function previewFromMessage(
   content: string | null,
   messageType: string,
-  fileName: string | null,
+  _fileName: string | null,
 ): string {
   if (content?.trim()) return content.replace(/\s+/g, ' ').trim();
   if (messageType === 'image') return 'Photo';
   if (messageType === 'audio') return 'Voice message';
-  if (messageType === 'file') return fileName ? `Document: ${fileName}` : 'Document';
+  if (messageType === 'file') return _fileName ? `Document: ${_fileName}` : 'Document';
+  if (messageType === 'call') return content?.trim() ? content.replace(/\s+/g, ' ').trim() : 'Call';
   return 'Message';
 }
 

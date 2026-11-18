@@ -10,6 +10,11 @@ import {
   type CallHandle,
   type CallType,
 } from '../lib/calls';
+import { onValue, ref } from 'firebase/database';
+import { getRtdb } from '../lib/firebase';
+import { setCallStatus } from '../lib/calls';
+import { insertMessage } from '../lib/chatApi';
+import { currentUserId as getCurrentUserId } from '../lib/chatApi';
 import type { Conversation } from '../types/chat';
 
 // Ringtone for incoming calls
@@ -54,6 +59,10 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   const [callModalOpen, setCallModalOpen] = useState(false);
   const [isIncoming, setIsIncoming] = useState(false);
   const activeCallRef = useRef<CallHandle | null>(null);
+  const callStartRef = useRef<number | null>(null);
+  const terminatingRef = useRef(false);
+  const acceptedRef = useRef(false);
+  const statusUnsubRef = useRef<(() => void) | null>(null);
   const incomingUnsubRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -93,11 +102,91 @@ export function useCall(conversation: Conversation | null, currentUserId: string
       if (!conversation || conversation.is_group) return;
       const otherUserId = conversation.other_user?.id;
       if (!otherUserId) return;
+      terminatingRef.current = false;
+      acceptedRef.current = false;
       try {
         const handle = await initiateCall(conversation.id, otherUserId, type);
         setActiveCall(handle);
         setIsIncoming(false);
         setCallModalOpen(true);
+        callStartRef.current = Date.now();
+
+        // Missed-call timeout (caller side): if not accepted within 30s, mark missed.
+        const missedTimer = window.setTimeout(async () => {
+          if (terminatingRef.current) return;
+          terminatingRef.current = true;
+          try {
+            await setCallStatus(conversation.id, handle.callId, 'missed');
+          } catch {
+            // ignore
+          }
+          try {
+            cleanup(handle);
+          } catch {
+            // ignore
+          }
+          setActiveCall(null);
+          setIncomingCall(null);
+          setIsIncoming(false);
+          setCallModalOpen(false);
+          // Caller writes a missed-call log message.
+          try {
+            const icon = type === 'video' ? '📹' : '📞';
+            await insertMessage({
+              conversationId: conversation.id,
+              senderId: getCurrentUserId(),
+              clientId: `call_${Date.now()}`,
+              content: `${icon} ${type === 'video' ? 'Video' : 'Voice'} call · missed`,
+              messageType: 'call',
+            });
+          } catch {
+            // ignore
+          }
+        }, 30000);
+
+        // Listen for callee-side status changes to terminate cleanly.
+        const unsub = onValue(
+          ref(getRtdb(), `calls/${conversation.id}/${handle.callId}/status`),
+          (snap) => {
+            const st = snap.val() as string;
+            if (st === 'accepted') {
+              acceptedRef.current = true;
+              return;
+            }
+            if (st === 'rejected' || st === 'cancelled' || st === 'ended' || st === 'missed') {
+              window.clearTimeout(missedTimer);
+              if (terminatingRef.current) return;
+              terminatingRef.current = true;
+              const type = handle.type;
+              try {
+                cleanup(handle);
+              } catch {
+                // ignore
+              }
+              setActiveCall(null);
+              setIncomingCall(null);
+              setIsIncoming(false);
+              setCallModalOpen(false);
+              if (statusUnsubRef.current) {
+                statusUnsubRef.current();
+                statusUnsubRef.current = null;
+              }
+              if (st === 'rejected') {
+                const icon = type === 'video' ? '📹' : '📞';
+                insertMessage({
+                  conversationId: conversation.id,
+                  senderId: getCurrentUserId(),
+                  clientId: `call_${Date.now()}`,
+                  content: `${icon} ${type === 'video' ? 'Video' : 'Voice'} call · declined`,
+                  messageType: 'call',
+                }).catch(() => {});
+              }
+            }
+          },
+        );
+        statusUnsubRef.current = unsub;
+        // store timer id for cleanup on unmount? best-effort; cleared via terminatingRef guard
+        void missedTimer;
       } catch (err) {
         console.error('Failed to start call:', err);
       }
@@ -111,11 +200,38 @@ export function useCall(conversation: Conversation | null, currentUserId: string
       delete (window as { __stopRingtone?: () => void }).__stopRingtone;
     }
     if (!incomingCall || !conversation) return;
+    terminatingRef.current = false;
     try {
       const handle = await acceptCall(conversation.id, incomingCall.callId, incomingCall.type);
       setActiveCall(handle);
       setIsIncoming(false);
+      acceptedRef.current = true;
+      callStartRef.current = Date.now();
       // Keep modal open, now in active call mode
+      const unsub = onValue(
+        ref(getRtdb(), `calls/${conversation.id}/${incomingCall.callId}/status`),
+        (snap) => {
+          const st = snap.val() as string;
+          if (st === 'ended' || st === 'rejected' || st === 'cancelled' || st === 'missed') {
+            if (terminatingRef.current) return;
+            terminatingRef.current = true;
+            try {
+              cleanup(handle);
+            } catch {
+              // ignore
+            }
+            setActiveCall(null);
+            setIncomingCall(null);
+            setIsIncoming(false);
+            setCallModalOpen(false);
+            if (statusUnsubRef.current) {
+              statusUnsubRef.current();
+              statusUnsubRef.current = null;
+            }
+          }
+        },
+      );
+      statusUnsubRef.current = unsub;
     } catch (err) {
       console.error('Failed to accept call:', err);
       setCallModalOpen(false);
@@ -143,23 +259,89 @@ export function useCall(conversation: Conversation | null, currentUserId: string
   const endActiveCall = useCallback(async () => {
     const handle = activeCallRef.current;
     if (handle) {
+      terminatingRef.current = true;
+      const isCaller = handle.isCaller;
+      const type = handle.type;
+      const wasAccepted = acceptedRef.current;
+      const startedAt = callStartRef.current;
       try {
-        await endCall(handle.conversationId, handle.callId);
+        if (wasAccepted) {
+          await endCall(handle.conversationId, handle.callId);
+        } else {
+          await setCallStatus(handle.conversationId, handle.callId, 'cancelled');
+        }
         await removeCall(handle.conversationId, handle.callId);
       } catch {
         // ignore
       }
       cleanup(handle);
       setActiveCall(null);
+      if (statusUnsubRef.current) {
+        statusUnsubRef.current();
+        statusUnsubRef.current = null;
+      }
+      // Caller writes a call-log message with duration.
+      if (isCaller && handle.conversationId) {
+        try {
+          const durationSec = startedAt ? Math.max(0, Math.round((Date.now() - startedAt) / 1000)) : 0;
+          const m = Math.floor(durationSec / 60);
+          const sec = durationSec % 60;
+          const icon = type === 'video' ? '📹' : '📞';
+          const label = wasAccepted
+            ? `${icon} ${type === 'video' ? 'Video' : 'Voice'} call · ${m}:${sec.toString().padStart(2, '0')}`
+            : `${icon} ${type === 'video' ? 'Video' : 'Voice'} call · cancelled`;
+          await insertMessage({
+            conversationId: handle.conversationId,
+            senderId: getCurrentUserId(),
+            clientId: `call_${Date.now()}`,
+            content: label,
+            messageType: 'call',
+          });
+        } catch {
+          // ignore
+        }
+      }
     }
+    callStartRef.current = null;
+    acceptedRef.current = false;
     setIncomingCall(null);
     setIsIncoming(false);
     setCallModalOpen(false);
   }, []);
 
+  // Close incoming modal if the caller cancels/misses/ends before accept.
+  useEffect(() => {
+    if (!incomingCall || !conversation) return;
+    const unsub = onValue(
+      ref(getRtdb(), `calls/${conversation.id}/${incomingCall.callId}/status`),
+      (snap) => {
+        const st = snap.val() as string;
+        if (st === 'cancelled' || st === 'missed' || st === 'ended' || st === 'rejected') {
+          if ((window as { __stopRingtone?: () => void }).__stopRingtone) {
+            (window as { __stopRingtone?: () => void }).__stopRingtone!();
+            delete (window as { __stopRingtone?: () => void }).__stopRingtone;
+          }
+          setIncomingCall(null);
+          setIsIncoming(false);
+          setCallModalOpen(false);
+        }
+      },
+    );
+    return () => unsub();
+  }, [incomingCall, conversation]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      terminatingRef.current = true;
+      if (statusUnsubRef.current) {
+        try {
+          statusUnsubRef.current();
+        } catch {
+          // ignore
+        }
+        statusUnsubRef.current = null;
+      }
       if (activeCallRef.current) {
         cleanup(activeCallRef.current);
       }

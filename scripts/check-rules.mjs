@@ -43,8 +43,8 @@ const mid = convo?.messages?.$mid;
 check('messages: create validates senderId + blocks system type',
   typeof mid?.['.validate'] === 'string' && mid['.validate'].includes('senderId') && mid['.validate'].includes('system'));
 check('messages: senderId required', typeof mid?.senderId?.['.validate'] === 'string');
-check('messages: fileSize capped at 10MB',
-  typeof mid?.fileSize?.['.validate'] === 'string' && mid.fileSize['.validate'].includes('10485760'));
+check('messages: fileSize capped at 50MB',
+  typeof mid?.fileSize?.['.validate'] === 'string' && mid.fileSize['.validate'].includes('52428800'));
 check('messages: messageType enum includes call',
   typeof mid?.messageType?.['.validate'] === 'string' && mid.messageType['.validate'].includes("'call'"));
 check('messages: createdAt index present',

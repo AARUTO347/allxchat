@@ -5,6 +5,7 @@ import {
   CheckCheck,
   Clock3,
   Download,
+  Eye,
   FileAudio,
   FileSpreadsheet,
   FileText,
@@ -13,8 +14,9 @@ import {
   SmilePlus,
   Trash2,
 } from 'lucide-react';
-import { Avatar } from '../ui/Avatar';
 import { useSignedUrl } from '../../hooks/useSignedUrl';
+import { Avatar } from '../ui/Avatar';
+import { FileViewerModal } from './FileViewerModal';
 import { getAttachmentDownloadUrl } from '../../lib/storage';
 import { formatMessageTime } from '../../lib/time';
 import { cn, formatFileSize } from '../../lib/utils';
@@ -176,9 +178,10 @@ function AudioAttachment({ message }: { message: ChatMessage }) {
 }
 
 function FileAttachment({ message }: { message: ChatMessage }) {
+  const [viewing, setViewing] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const download = async () => {
+  const handleDownload = async () => {
     if (!message.file_path) return;
     setDownloading(true);
     try {
@@ -186,7 +189,13 @@ function FileAttachment({ message }: { message: ChatMessage }) {
         message.file_path,
         message.file_name || 'attachment',
       );
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = message.file_name || 'attachment';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch {
       toast.error('Unable to download this file.');
     } finally {
@@ -195,26 +204,41 @@ function FileAttachment({ message }: { message: ChatMessage }) {
   };
 
   return (
-    <div className="flex min-w-[220px] max-w-[280px] items-center gap-3 rounded-xl bg-black/[0.045] p-2.5 dark:bg-white/[0.06]">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
-        {fileIcon(message.file_mime)}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-medium">
-          {message.file_name || 'Attachment'}
+    <>
+      <div className="flex min-w-[220px] max-w-[280px] items-center gap-3 rounded-xl bg-black/[0.045] p-2.5 dark:bg-white/[0.06]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+          {fileIcon(message.file_mime)}
         </span>
-        <span className="block text-[11px] opacity-60">{formatFileSize(message.file_size)}</span>
-      </span>
-      <button
-        type="button"
-        onClick={download}
-        disabled={downloading}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[#54656f] hover:bg-black/[0.06] disabled:opacity-50 dark:text-[#aebac1] dark:hover:bg-white/[0.08]"
-        aria-label="Download file"
-      >
-        {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-      </button>
-    </div>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium">
+            {message.file_name || 'Attachment'}
+          </span>
+          <span className="block text-[11px] opacity-60">{formatFileSize(message.file_size)}</span>
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setViewing(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#54656f] hover:bg-black/[0.06] dark:text-[#aebac1] dark:hover:bg-white/[0.08]"
+            aria-label="View file"
+            title="View"
+          >
+            <Eye size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#54656f] hover:bg-black/[0.06] disabled:opacity-50 dark:text-[#aebac1] dark:hover:bg-white/[0.08]"
+            aria-label="Download file"
+            title="Download"
+          >
+            {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          </button>
+        </div>
+      </div>
+      <FileViewerModal open={viewing} onClose={() => setViewing(false)} message={message} />
+    </>
   );
 }
 
@@ -248,6 +272,16 @@ export function MessageBubble({
       <div className="my-2 flex justify-center px-4">
         <span className="rounded-full bg-black/[0.06] px-3 py-1 text-[11px] text-[#667781] dark:bg-white/[0.08] dark:text-[#8696a0]">
           {message.content}
+        </span>
+      </div>
+    );
+  }
+
+  if (message.message_type === 'call') {
+    return (
+      <div className="my-2 flex justify-center px-4">
+        <span className="rounded-full bg-black/[0.06] px-3 py-1 text-[11px] text-[#667781] dark:bg-white/[0.08] dark:text-[#8696a0]">
+          {message.content || 'Call'}
         </span>
       </div>
     );
