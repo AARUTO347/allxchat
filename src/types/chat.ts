@@ -45,7 +45,7 @@ export interface ChatMessage {
   sender_id: string | null;
   client_id: string | null;
   content: string | null;
-  message_type: 'text' | 'image' | 'file' | 'audio' | 'system';
+  message_type: 'text' | 'image' | 'file' | 'audio' | 'system' | 'call';
   file_path: string | null;
   file_name: string | null;
   file_mime: string | null;

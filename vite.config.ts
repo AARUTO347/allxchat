@@ -9,6 +9,18 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true,
+      ignored: [
+        '**/animdustry-play/**',
+        '**/AARUTO_ANIME.AI/**',
+        '**/AARUESP*/**',
+        '**/AUTAI_ZEN_AOD_2.0/**',
+        '**/animdustry/**',
+        '**/whatsapp-bridge/**',
+        '**/vercel-stage/**',
+        '**/assets/**',
+        '**/.firebase/**',
+        '**/.netlify/**',
+      ],
     },
   },
   build: {

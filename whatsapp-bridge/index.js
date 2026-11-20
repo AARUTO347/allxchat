@@ -26,6 +26,7 @@ if (!FIREBASE_API_KEY || !BRIDGE_EMAIL || !BRIDGE_PASSWORD || !ALLXCHAT_UID) {
 // ---------------------------------------------------------------------------
 let botUid = null;
 let idToken = null;
+const ensuredConversations = new Set();
 
 async function firebaseSignIn() {
   const res = await fetch(
@@ -75,8 +76,15 @@ function directConversationId(a, b) {
 
 async function ensureConversation() {
   const cid = directConversationId(botUid, ALLXCHAT_UID);
-  const existing = await rtdb('GET', `conversations/${cid}`);
-  if (existing) return cid;
+  // RTDB returns 401 (not 404) for rule-denied reads, so probe our own
+  // index instead: userConversations/{botUid}/{cid} is readable by the bot.
+  const indexed = await rtdb('GET', `userConversations/${botUid}/${cid}`).catch(() => null);
+  if (indexed === true || ensuredConversations.has(cid)) return cid;
+  const existing = await rtdb('GET', `conversations/${cid}`).catch(() => null);
+  if (existing && typeof existing === 'object' && existing.createdBy) {
+    ensuredConversations.add(cid);
+    return cid;
+  }
   const now = new Date().toISOString();
   const participants = [botUid, ALLXCHAT_UID].sort();
   const participantIds = {};
@@ -98,6 +106,7 @@ async function ensureConversation() {
   });
   await rtdb('PUT', `userConversations/${ALLXCHAT_UID}/${cid}`, true);
   await rtdb('PUT', `userConversations/${botUid}/${cid}`, true);
+  ensuredConversations.add(cid);
   return cid;
 }
 
@@ -240,12 +249,61 @@ waClient.on('message', async (msg) => {
 });
 
 // ---------------------------------------------------------------------------
-// HTTP: QR page + outbound send
+// HTTP: QR page + outbound send (localhost-only, token-gated, rate limited)
 // ---------------------------------------------------------------------------
+const crypto = require('crypto');
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
+
+const BRIDGE_TOKEN = process.env.BRIDGE_TOKEN || '';
+if (!BRIDGE_TOKEN) {
+  const generated = crypto.randomBytes(24).toString('hex');
+  process.env.BRIDGE_TOKEN = generated;
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(__dirname, '.env');
+    const current = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+    const lines = current.split(/\r?\n/).filter((l) => !l.startsWith('BRIDGE_TOKEN='));
+    lines.push(`BRIDGE_TOKEN=${generated}`);
+    fs.writeFileSync(envPath, lines.join('\n') + '\n', { encoding: 'utf8' });
+    console.log('Generated BRIDGE_TOKEN and saved it to .env');
+  } catch (error) {
+    console.error('Could not persist BRIDGE_TOKEN:', error.message);
+  }
+}
+
+function requireBridgeToken(req, res) {
+  const expected = process.env.BRIDGE_TOKEN || '';
+  const header = req.headers['authorization'] || '';
+  // Header is preferred; `?t=` query param exists so the QR page is usable
+  // from a plain localhost browser (no extensions needed).
+  const offered = header.replace(/^Bearer\s+/i, '') || (req.query && req.query.t) || '';
+  if (!expected || offered !== expected) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+// Fixed-window rate limiter: 30 requests per minute per IP on mutating routes.
+const sendHits = new Map();
+function rateLimitedSend(req, res) {
+  const now = Date.now();
+  const windowStart = now - 60_000;
+  const ip = req.ip || 'unknown';
+  const hits = (sendHits.get(ip) || []).filter((t) => t > windowStart);
+  if (hits.length >= 30) {
+    res.status(429).json({ error: 'Rate limit exceeded. Slow down.' });
+    return false;
+  }
+  hits.push(now);
+  sendHits.set(ip, hits);
+  return true;
+}
 
 app.get('/qr', async (req, res) => {
+  if (!requireBridgeToken(req, res)) return;
   if (waReady) {
     return res.send('<h1>Connected. The bridge is online.</h1>');
   }
@@ -262,8 +320,13 @@ app.get('/qr', async (req, res) => {
   );
 });
 
-app.get('/status', (req, res) => res.json({ ready: waReady, botUid, paired: !!idToken }));
+app.get('/status', (req, res) => {
+  if (!requireBridgeToken(req, res)) return;
+  res.json({ ready: waReady });
+});
 app.post('/send', async (req, res) => {
+  if (!requireBridgeToken(req, res)) return;
+  if (!rateLimitedSend(req, res)) return;
   const { chatId, message } = req.body || {};
   if (!waReady) return res.status(503).json({ error: 'WhatsApp not ready' });
   if (!chatId || !message) return res.status(400).json({ error: 'chatId and message required' });
@@ -274,7 +337,7 @@ app.post('/send', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-app.listen(PORT, () => console.log(`Bridge API on http://localhost:${PORT}`));
+app.listen(PORT, '127.0.0.1', () => console.log(`Bridge API on http://127.0.0.1:${PORT} (localhost only)`));
 
 // ---------------------------------------------------------------------------
 // Boot

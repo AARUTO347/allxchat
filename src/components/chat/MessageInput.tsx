@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type KeyboardEvent } from 'react';
 import {
   FileAudio,
   FileText,
@@ -28,7 +28,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import type { ChatMessage, Conversation, Profile } from '../../types/chat';
 
 const ACCEPTED_FILES =
-  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a';
+  '.jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.mp3,.wav,.ogg,.webm,.m4a,.mp4,.mov';
 
 interface MessageInputProps {
   conversation: Conversation;
@@ -106,7 +106,9 @@ export function MessageInput({
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiContainerRef = useRef<HTMLDivElement>(null);
@@ -117,6 +119,14 @@ export function MessageInput({
     (theme === 'system' &&
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      teardownRecording();
+    };
+  }, []);
 
   useEffect(() => {
     setText('');
@@ -155,66 +165,183 @@ export function MessageInput({
     return undefined;
   }, [conversation.id]);
 
-  const startRecording = async () => {
+  const teardownRecording = useCallback(() => {
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        recorder.stop();
+      } catch {
+        // ignore
+      }
+    }
+    const stream = streamRef.current;
+    streamRef.current = null;
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // ignore
+        }
+      });
+    }
+    if (mountedRef.current) {
+      setRecording(false);
+      setRecordingSeconds(0);
+    }
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      toast.error('Audio recording is not supported on this browser.');
+      return;
+    }
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
-      const mimeType = types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+      const mimeType = types.find((t) => {
+        try {
+          return MediaRecorder.isTypeSupported(t);
+        } catch {
+          return false;
+        }
+      }) || '';
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       const chunks: Blob[] = [];
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunks.push(event.data);
       };
       recorder.onstop = () => {
-        stream.getTracks().forEach((track) => track.stop());
+        const tracks = stream?.getTracks() ?? [];
+        tracks.forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
+        if (streamRef.current === stream) streamRef.current = null;
         const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
         if (blob.size === 0) {
           toast.error('Recording was empty. Try again.');
+          if (mountedRef.current) {
+            setRecording(false);
+            setRecordingSeconds(0);
+          }
           return;
         }
-        const extension = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm';
+        const extension =
+          blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm';
         const file = new File([blob], `voice-note.${extension}`, { type: blob.type });
         acceptFile(file);
-        setRecording(false);
+        if (mountedRef.current) {
+          setRecording(false);
+          setRecordingSeconds(0);
+        }
       };
       recorderRef.current = recorder;
       setRecording(true);
       setRecordingSeconds(0);
       recorder.start(250);
-      const timer = window.setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+      const timer = window.setInterval(() => {
+        if (mountedRef.current) setRecordingSeconds((s) => s + 1);
+      }, 1000);
       intervalRef.current = timer;
-    } catch (error) {
-      toast.error('Microphone access was denied.');
-      setRecording(false);
+    } catch (err: unknown) {
+      if (stream) {
+        stream.getTracks().forEach((t) => {
+          try {
+            t.stop();
+          } catch {
+            // ignore
+          }
+        });
+      }
+      streamRef.current = null;
+      recorderRef.current = null;
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      const name = (err as { name?: string })?.name;
+      let errorMsg = 'Microphone access failed. Try again.';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
+        errorMsg = 'Microphone permission denied. Check browser settings.';
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        errorMsg = 'No microphone device found.';
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        errorMsg = 'Microphone is busy or unreadable by another app.';
+      } else if (name === 'OverconstrainedError') {
+        errorMsg = 'Microphone constraints not supported.';
+      }
+      toast.error(errorMsg);
+      if (mountedRef.current) {
+        setRecording(false);
+        setRecordingSeconds(0);
+      }
     }
-  };
+  }, []);
 
-  const stopRecording = () => {
-    if (intervalRef.current) window.clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    recorderRef.current?.stop();
-    recorderRef.current = null;
-  };
-
-  const cancelRecording = () => {
-    if (intervalRef.current) window.clearInterval(intervalRef.current);
-    intervalRef.current = null;
+  const stopRecording = useCallback(() => {
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     const recorder = recorderRef.current;
     recorderRef.current = null;
-    if (recorder) {
-      recorder.onstop = null;
-      recorder.stop();
+    if (recorder && recorder.state !== 'inactive') {
+      try {
+        recorder.stop();
+      } catch {
+        teardownRecording();
+      }
+    } else {
+      teardownRecording();
     }
-    setRecording(false);
-  };
+  }, [teardownRecording]);
 
-  useEffect(
-    () => () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-    },
-    [],
-  );
-
+  const cancelRecording = useCallback(() => {
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.ondataavailable = null;
+      recorder.onstop = null;
+      try {
+        recorder.stop();
+      } catch {
+        // ignore
+      }
+    }
+    const stream = streamRef.current;
+    streamRef.current = null;
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // ignore
+        }
+      });
+    }
+    if (mountedRef.current) {
+      setRecording(false);
+      setRecordingSeconds(0);
+    }
+  }, []);
   const acceptFile = (file: File | null) => {
     if (!file) return;
     const validation = validateFile(file);
@@ -492,7 +619,7 @@ export function MessageInput({
 
         <div className="hidden items-center justify-between px-2 pb-1 pt-1.5 text-[10px] text-[#8696a0] sm:flex">
           <span>Enter to send · Shift + Enter for a new line</span>
-          <span>Max file size 5 MB</span>
+          <span>Max file size 50 MB</span>
         </div>
       </div>
 
